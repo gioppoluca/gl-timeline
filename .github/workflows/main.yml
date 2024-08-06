@@ -70,9 +70,20 @@ jobs:
 
     steps:
       - name: Checkout Repository
-        uses: actions/checkout@v3
+        uses: actions/checkout@v4
 
-
+      - name: Update CHANGELOG
+        id: changelog
+        uses: requarks/changelog-action@v1
+        with:
+          token: ${{ github.token }}
+          tag: ${{ github.ref_name }}
+      - name: Commit CHANGELOG.md
+        uses: stefanzweifel/git-auto-commit-action@v5
+        with:
+          branch: master
+          commit_message: 'docs: update CHANGELOG.md for ${{ github.ref_name }} [skip ci]'
+          file_pattern: CHANGELOG.md
       # Extract version embedded in the tag.
       # This step expects the tag to be one of the following formats:
       #   - "v<major>.<minor>.<patch>" (e.g., "v1.2.3")
@@ -123,7 +134,8 @@ jobs:
             scripts/                             \
             styles/                              \
             packs/                               \
-            language/                            \
+            img/                                 \
+            languages/                           \
             lang/
           # Don't forget to add a backslash at the end of the line for any
           # additional files or directories!
@@ -142,3 +154,26 @@ jobs:
           artifacts: './module.json, ./module.zip'
           tag: ${{ github.event.release.tag_name }}
           body: ${{ github.event.release.body }}
+
+      # Autopublish to the Foundry Admin panel
+      # - name: FoundryVTT AutoPublish
+      #   uses: Varriount/fvtt-autopublish@v2.0.2
+      #   with:
+      #     username: ${{ secrets.FOUNDRY_ADMIN_USER }}
+      #     password: ${{ secrets.FOUNDRY_ADMIN_PW }}
+      #     module-id: ${{ secrets.FOUNDRY_ADMIN_ID }}
+      #     manifest-url: https://github.com/${{ github.repository }}/releases/download/${{ github.event.release.tag_name }}/module.json
+      #     manifest-file: ./module.json
+      - name: "FoundryVTT API publish"
+        uses: indiesdev/curl@v1.1
+        id: foundry-api
+        with:
+          url: https://api.foundryvtt.com/_api/packages/release_version/
+          method: "POST"
+          headers: '{ "Content-Type": "application/json", "Authorization": "${{ secrets.FOUNDRY_API_TOKEN }}" }'
+          accept: 200
+          body: '{"id": "gl-timeline", "dry-run": false, "release": { "version": "${{ github.event.release.tag_name }}", "manifest": "https://github.com/${{ github.repository }}/releases/download/${{ github.event.release.tag_name }}/module.json", "notes": "https://github.com/${{ github.repository }}/blob/master/CHANGELOG.md", "compatibility": { "minimum": "11", "verified": "12", "maximum": "12" } } }'
+          log-response: true
+      - name: "Use response"
+        run: echo ${{ steps.foundry-api.outputs.response }}          
+  
