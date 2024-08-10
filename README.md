@@ -7,3 +7,6 @@
 This module allows you to create a timeline from Journal Entries.
 
 It provides a dialog to add time data to Journal Entries and a dialog to plot the timeline.
+
+For reviewers this is still a work in progress.
+The code here is a first mockup for the module.
