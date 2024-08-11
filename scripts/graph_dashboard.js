@@ -1,5 +1,3 @@
-//import GraphHandlebarsHelpers from "./graph_handlebarHandlers.js";
-//import GraphForm from "./graph_form.js";
 const { ApplicationV2, HandlebarsApplicationMixin } = foundry.applications.api
 
 export default class GraphDashboard extends HandlebarsApplicationMixin(ApplicationV2) {
@@ -21,7 +19,7 @@ export default class GraphDashboard extends HandlebarsApplicationMixin(Applicati
     tag: "div", // The default is "div"
     window: {
       icon: "fas fa-gear", // You can now add an icon to the header
-      title: "FOO.form.title"
+      title: "GLTIMELINE.main.title"
     }
 
   }
@@ -33,9 +31,10 @@ export default class GraphDashboard extends HandlebarsApplicationMixin(Applicati
   get title() {
     console.log('getTitle')
     //return `My Module: ${game.i18n.localize(this.options.window.title)}`;
-    return 'gioppo';
+    return '${game.i18n.localize(this.options.window.title)}';
   }
   _onRender(context, options) {
+    console.log('render');
     this.svg_orig();
   }
 
@@ -49,8 +48,27 @@ export default class GraphDashboard extends HandlebarsApplicationMixin(Applicati
   _prepareContext(options) {
     const setting = null; //game.settings.get("foo", "config");
     console.log('_prepareContext');
+    this.timeline = [];
+    game.journal.forEach(the_journal => {
+      console.log(the_journal);
+      var pages = the_journal.pages.filter(x => { return x.flags.timeline })
+      console.log(pages)
+      pages.forEach(p => {
+        var time_record = {
+          start: new Date(p.flags.timeline.startdate),
+          end: new Date(p.flags.timeline.enddate), 
+          stack: 'stack1', 
+          value: p.name, 
+          labelStart: 'Alpha_start', 
+          labelEnd: 'Alpha_end', 
+          color: p.flags.timeline.colorevent
+        }
+        this.timeline.push(time_record);
+      })
+
+    });
     return {
-      setting
+      
     }
   }
 
@@ -66,9 +84,10 @@ export default class GraphDashboard extends HandlebarsApplicationMixin(Applicati
       { start: new Date('2023-05-24'), stack: 'stack2', value: 'dataB', labelStart: 'Delta_start', labelEnd: null, color: 'purple' }, // Single event
       { start: new Date('2023-07-01'), end: new Date('2023-07-02'), stack: 'stack3', value: 'dataC', labelStart: 'Epsilon_start', labelEnd: 'Epsilon_end', color: 'red' }
     ];
-
+console.log(this.timeline)
+console.log(data);
     // Extract the unique dates from the data
-    const customTicks = [...new Set(data.flatMap(d => [d.start.getTime(), d.end ? d.end.getTime() : d.start.getTime()]))]
+    const customTicks = [...new Set(this.timeline.flatMap(d => [d.start.getTime(), d.end ? d.end.getTime() : d.start.getTime()]))]
       .sort((a, b) => a - b);
 
     const margin = { top: 20, right: 20, bottom: 50, left: 50 },
@@ -91,7 +110,7 @@ export default class GraphDashboard extends HandlebarsApplicationMixin(Applicati
     // Axis
     const xAxis = window.d3.axisBottom(x)
       .tickFormat(d => {
-        const item = data.find(e => e.start.getTime() === d || (e.end && e.end.getTime() === d));
+        const item = this.timeline.find(e => e.start.getTime() === d || (e.end && e.end.getTime() === d));
         return item ? (item.start.getTime() === d ? item.labelStart : item.labelEnd) : '';
       });
 
@@ -116,7 +135,7 @@ export default class GraphDashboard extends HandlebarsApplicationMixin(Applicati
 
     // Bars for stacks with both start and end dates
     svg.selectAll(".bar")
-      .data(data.filter(d => d.end))
+      .data(this.timeline.filter(d => d.end))
       .enter().append("rect")
       .attr("class", d => `bar ${d.stack}`)
       .attr("x", d => x(d.start.getTime()) + (x.bandwidth() - (x.bandwidth() * x.padding())) / 2) // Align bars with tick marks
@@ -131,7 +150,7 @@ export default class GraphDashboard extends HandlebarsApplicationMixin(Applicati
 
     // Circles for single-point events
     svg.selectAll(".circle-event")
-      .data(data.filter(d => !d.end))
+      .data(this.timeline.filter(d => !d.end))
       .enter().append("circle")
       .attr("class", "circle-event")
       .attr("cx", d => x(d.start.getTime()) + x.bandwidth() / 2) // Center the circle horizontally at the tick
@@ -183,7 +202,7 @@ export default class GraphDashboard extends HandlebarsApplicationMixin(Applicati
     // Add a right-click event to save the SVG
     window.d3.select("svg").on("contextmenu", function (event) {
       event.preventDefault();
-//      downloadImage();
+      //      downloadImage();
     });
 
   }
