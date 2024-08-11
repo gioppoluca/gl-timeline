@@ -54,6 +54,7 @@ export default class GraphDashboard extends HandlebarsApplicationMixin(Applicati
       var pages = the_journal.pages.filter(x => { return x.flags.timeline })
       console.log(pages)
       pages.forEach(p => {
+        console.log(p.id);
         var time_record = {
           start: new Date(p.flags.timeline.startdate),
           end: new Date(p.flags.timeline.enddate),
@@ -61,6 +62,7 @@ export default class GraphDashboard extends HandlebarsApplicationMixin(Applicati
           value: p.name,
           labelStart: 'Alpha_start',
           labelEnd: 'Alpha_end',
+          journal_id: p.id,
           color: p.flags.timeline.colorevent
         }
         this.timeline.push(time_record);
@@ -72,6 +74,11 @@ export default class GraphDashboard extends HandlebarsApplicationMixin(Applicati
     }
   }
 
+  openjournal(journal_id) {
+    console.log(journal_id)
+    alert('Open Journal ID: ' + journal_id);
+    // You can add more logic here, like opening a specific URL or triggering other events.
+  }
 
   svg_orig() {
     const stacks = ['stack1', 'stack2', 'stack3'];
@@ -149,14 +156,26 @@ export default class GraphDashboard extends HandlebarsApplicationMixin(Applicati
       .attr("fill", d => d.color);
 
     // Add labels to bars
+    // svg.selectAll(".bar-label")
+    //   .data(this.timeline.filter(d => d.end))
+    //   .enter().append("text")
+    //   .attr("class", "label-text")
+    //   .attr("x", d => x(d.start.getTime()) + (x(d.end.getTime()) - x(d.start.getTime())) / 2)
+    //   .attr("y", d => y(d.stack) + y.bandwidth() / 2 + 3)  // Center the label vertically
+    //   .text(d => d.value);
+    const outerThis = this; // Capture the outer `this` context
     svg.selectAll(".bar-label")
       .data(this.timeline.filter(d => d.end))
       .enter().append("text")
       .attr("class", "label-text")
       .attr("x", d => x(d.start.getTime()) + (x(d.end.getTime()) - x(d.start.getTime())) / 2)
       .attr("y", d => y(d.stack) + y.bandwidth() / 2 + 3)  // Center the label vertically
-      .text(d => d.value);
-
+      .text(d => (d.value + " " + d.journal_id))
+      .on("click", function(event, d) {
+        console.log(event)
+        console.log(outerThis)
+        outerThis.openjournal(d.journal_id); // Use `d` to get the journal_id
+    });
     // Circles for single-point events
     svg.selectAll(".circle-event")
       .data(this.timeline.filter(d => !d.end))
