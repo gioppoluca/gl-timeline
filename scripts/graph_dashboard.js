@@ -62,7 +62,7 @@ export default class GraphDashboard extends HandlebarsApplicationMixin(Applicati
           value: p.name,
           labelStart: 'Alpha_start',
           labelEnd: 'Alpha_end',
-          journal_id: p.id,
+          journal_id: p.uuid,
           color: p.flags.timeline.colorevent
         }
         this.timeline.push(time_record);
@@ -74,10 +74,20 @@ export default class GraphDashboard extends HandlebarsApplicationMixin(Applicati
     }
   }
 
-  openjournal(journal_id) {
+  async openjournal(journal_id) {
     console.log(journal_id)
-    alert('Open Journal ID: ' + journal_id);
+    //alert('Open Journal ID: ' + journal_id);
     // You can add more logic here, like opening a specific URL or triggering other events.
+    const page = await fromUuid(journal_id);
+    console.log(page);
+    const sorted = page.parent.sheet._pages ?? [];
+    const pageIndex = sorted.indexOf(sorted.find(s => s._id == page.id)) ?? -1;
+    if (page.parent.sheet.rendered && page.parent.sheet?.pageIndex == pageIndex) {
+      page.parent.sheet.close();
+      return;
+    }
+
+    page.parent.sheet.render(true, { pageId: page.id })
   }
 
   svg_orig() {
@@ -170,12 +180,12 @@ export default class GraphDashboard extends HandlebarsApplicationMixin(Applicati
       .attr("class", "label-text")
       .attr("x", d => x(d.start.getTime()) + (x(d.end.getTime()) - x(d.start.getTime())) / 2)
       .attr("y", d => y(d.stack) + y.bandwidth() / 2 + 3)  // Center the label vertically
-      .text(d => (d.value + " " + d.journal_id))
-      .on("click", function(event, d) {
+      .text(d => d.value)
+      .on("click", function (event, d) {
         console.log(event)
         console.log(outerThis)
         outerThis.openjournal(d.journal_id); // Use `d` to get the journal_id
-    });
+      });
     // Circles for single-point events
     svg.selectAll(".circle-event")
       .data(this.timeline.filter(d => !d.end))
