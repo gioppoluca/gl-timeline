@@ -56,11 +56,11 @@ export default class GraphDashboard extends HandlebarsApplicationMixin(Applicati
       pages.forEach(p => {
         var time_record = {
           start: new Date(p.flags.timeline.startdate),
-          end: new Date(p.flags.timeline.enddate), 
-          stack: 'stack1', 
-          value: p.name, 
-          labelStart: 'Alpha_start', 
-          labelEnd: 'Alpha_end', 
+          end: new Date(p.flags.timeline.enddate),
+          stack: 'stack1',
+          value: p.name,
+          labelStart: 'Alpha_start',
+          labelEnd: 'Alpha_end',
           color: p.flags.timeline.colorevent
         }
         this.timeline.push(time_record);
@@ -68,7 +68,7 @@ export default class GraphDashboard extends HandlebarsApplicationMixin(Applicati
 
     });
     return {
-      
+
     }
   }
 
@@ -84,8 +84,8 @@ export default class GraphDashboard extends HandlebarsApplicationMixin(Applicati
       { start: new Date('2023-05-24'), stack: 'stack2', value: 'dataB', labelStart: 'Delta_start', labelEnd: null, color: 'purple' }, // Single event
       { start: new Date('2023-07-01'), end: new Date('2023-07-02'), stack: 'stack3', value: 'dataC', labelStart: 'Epsilon_start', labelEnd: 'Epsilon_end', color: 'red' }
     ];
-console.log(this.timeline)
-console.log(data);
+    console.log(this.timeline)
+    console.log(data);
     // Extract the unique dates from the data
     const customTicks = [...new Set(this.timeline.flatMap(d => [d.start.getTime(), d.end ? d.end.getTime() : d.start.getTime()]))]
       .sort((a, b) => a - b);
@@ -148,6 +148,15 @@ console.log(data);
       .attr("height", barHeight)  // Set bar height to 7 pixels
       .attr("fill", d => d.color);
 
+    // Add labels to bars
+    svg.selectAll(".bar-label")
+      .data(this.timeline.filter(d => d.end))
+      .enter().append("text")
+      .attr("class", "label-text")
+      .attr("x", d => x(d.start.getTime()) + (x(d.end.getTime()) - x(d.start.getTime())) / 2)
+      .attr("y", d => y(d.stack) + y.bandwidth() / 2 + 3)  // Center the label vertically
+      .text(d => d.value);
+
     // Circles for single-point events
     svg.selectAll(".circle-event")
       .data(this.timeline.filter(d => !d.end))
@@ -159,6 +168,15 @@ console.log(data);
       .attr("fill", d => d.color)
       .style("stroke", "black")  // Add a thin black line for each circle
       .style("stroke-width", "1px");
+
+    // Add labels to circles
+    svg.selectAll(".circle-label")
+      .data(this.timeline.filter(d => !d.end))
+      .enter().append("text")
+      .attr("class", "label-text")
+      .attr("x", d => x(d.start.getTime()) + x.bandwidth() / 2 + 10) // Place label to the right of the circle
+      .attr("y", d => y(d.stack) + y.bandwidth() / 2 + 3)  // Center the label vertically
+      .text(d => d.value);
 
     // Add the X Axis
     svg.append("g")
