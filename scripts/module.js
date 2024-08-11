@@ -1,5 +1,5 @@
 import GraphDashboard from "./graph_dashboard.js"
-
+import JournalTimelineDialog from "./journal_timeline_dialog.js"
 
 Hooks.once('init', async function () {
 
@@ -16,21 +16,26 @@ Hooks.once('ready', async function () {
 Hooks.on("getJournalPageSheetHeaderButtons", (sheet, buttons) => {
 	console.log("check the sheet")
 	console.log(sheet)
+	console.log(this)
 	if (true) {
 		buttons.unshift({
 			label: "Timeline data",
 			class: "timeline",
 			icon: "fas fa-timeline",
 			onclick: () => {
-				console.log('invoking the dashboard');
-				new GraphDashboard();
-
+				console.log('invoking the dialog');
+				console.log(sheet)
+				var jtd = new JournalTimelineDialog({},sheet.object);
+				console.log('----------- clicked button - created - now render')
+				console.log(jtd)
+				jtd.render(true);
+	
 				// Open Config window
 				//new SheetExportconfig(sheet.actor, sheetType, sheet).render(true);
 
 				// Bring window to top
 				Object.values(ui.windows)
-					.filter(window => window instanceof GraphDashboard)[0]
+					.filter(window => window instanceof JournalTimelineDialog)[0]
 					?.bringToTop();
 			},
 		});

@@ -1,3 +1,6 @@
 {
-    "MODULE.hello": "hello"
+    "GLTIMELINE.hello": "hello",
+    "GLTIMELINE.main.title": "Timeline graph",
+    "GLTIMELINE.dialog.start_date": "Start date:",
+    "GLTIMELINE.dialog.end_date": "End date:"
 }
