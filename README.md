@@ -4,9 +4,8 @@
 
 # Timeline
 
-This module allows you to create a timeline from Journal Entries.
+This module allows you to create a timeline from Simple Calendar nodes.  It require to use the simmple calendar module and will use the correct calendar used in the world.
+![timeline dashboard](doc/dashboard.png)
 
-It provides a dialog to add time data to Journal Entries and a dialog to plot the timeline.
+It provides a dialog to decide which notes will end up in the dashboard.
 
-For reviewers this is still a work in progress.
-The code here is a first mockup for the module.
