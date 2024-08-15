@@ -1,0 +1,14 @@
+#timeline {
+    overflow: visible;
+}
+
+.tooltip-timeline {
+    position: absolute;
+    background-color: #333;
+    color: #fff;
+    padding: 5px;
+    border-radius: 3px;
+    pointer-events: none; /* Prevent tooltip from interfering with mouse events */
+    font-size: 12px;
+    display: none;
+  }

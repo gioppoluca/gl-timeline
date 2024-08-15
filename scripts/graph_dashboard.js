@@ -1,4 +1,5 @@
 const { ApplicationV2, HandlebarsApplicationMixin } = foundry.applications.api
+import { createTimeline, getNoteCategoryColors, getNoteCategoryNames, convertNotes, getUniqueOrderedTimestamps } from './timeline.js';
 
 export default class GraphDashboard extends HandlebarsApplicationMixin(ApplicationV2) {
   constructor(options = {}) {
@@ -14,12 +15,13 @@ export default class GraphDashboard extends HandlebarsApplicationMixin(Applicati
     },
     position: {
       width: 640,
-      height: "auto",
+      height: 800,
     },
     tag: "div", // The default is "div"
     window: {
       icon: "fas fa-gear", // You can now add an icon to the header
-      title: "GLTIMELINE.main.title"
+      title: "GLTIMELINE.main.title",
+      resizable: true
     }
 
   }
@@ -90,167 +92,188 @@ export default class GraphDashboard extends HandlebarsApplicationMixin(Applicati
     page.parent.sheet.render(true, { pageId: page.id })
   }
 
+
+  // Function to handle the click event
+  openLink(link) {
+    console.log("gioppo link")
+    //window.open(link, '_blank');
+  }
+
+  // Define the formatXaxis function
+  formatXaxis(date) {
+    console.log(date)
+  //  var year = window.d3.timeFormat("%Y")(date);
+    var calDate = window.SimpleCalendar.api.formatTimestamp(date)
+    return calDate.date + " " + calDate.time;
+  }
   svg_orig() {
-    const stacks = ['stack1', 'stack2', 'stack3'];
 
-    // Data with custom labels, optional end dates, and colors
-    const data = [
-      { start: new Date('2023-05-23'), end: new Date('2023-05-24'), stack: 'stack1', value: 'data1', labelStart: 'Alpha_start', labelEnd: 'Alpha_end', color: 'steelblue' },
-      { start: new Date('2023-06-24'), stack: 'stack1', value: 'data2', labelStart: 'Beta_start', labelEnd: null, color: 'orange' }, // Single event
-      { start: new Date('2023-06-23'), end: new Date('2023-06-25'), stack: 'stack2', value: 'dataA', labelStart: 'Gamma_start', labelEnd: 'Gamma_end', color: 'green' },
-      { start: new Date('2023-05-24'), stack: 'stack2', value: 'dataB', labelStart: 'Delta_start', labelEnd: null, color: 'purple' }, // Single event
-      { start: new Date('2023-07-01'), end: new Date('2023-07-02'), stack: 'stack3', value: 'dataC', labelStart: 'Epsilon_start', labelEnd: 'Epsilon_end', color: 'red' }
+    createTimeline()
+    console.log("getData from SimpleCalendar");
+    var nodecat = window.SimpleCalendar.api.getCurrentCalendar().noteCategories
+    const types = getNoteCategoryNames(nodecat);
+    console.log(types);
+    const colorsArray = getNoteCategoryColors(nodecat);
+    console.log(colorsArray);
+    var notes = window.SimpleCalendar.api.getNotes().filter(n => n.flags?.timeline?.timelineInclude);
+    var notesData = []
+    notes.forEach(note => {
+      var convnote = convertNotes(note)
+      notesData.push(convnote)
+    })
+    console.log(notesData);
+
+    const colorScale = window.d3.scaleOrdinal()
+    .domain(types)
+    .range(colorsArray);
+
+    var data = [
+      { "name": "American Revolutionary War", "start": "4/19/1775", "end": "9/3/1783", "sphere": "European", "link": "https://en.wikipedia.org/wiki/American_Revolutionary_War" },
+      { "name": "Cherokee–American wars", "start": "01/01/1776", "end": "12/31/1795", "sphere": "Native", "link": "https://en.wikipedia.org/wiki/Cherokee%E2%80%93American_wars" },
+      { "name": "Northwest Indian War", "start": "01/01/1785", "end": "12/31/1795", "sphere": "Native", "link": "https://en.wikipedia.org/wiki/Northwest_Indian_War" },
+      { "name": "Whiskey Rebellion", "start": "01/01/1795", "end": "12/31/1795", "sphere": "Internal", "link": "https://en.wikipedia.org/wiki/Whiskey_Rebellion" },
+      { "name": "Quasi-War", "start": "01/01/1798", "end": "12/31/1800", "sphere": "Latin America", "link": "https://en.wikipedia.org/wiki/Quasi-War" },
+      { "name": "First Barbary War", "start": "5/10/1801", "end": "6/10/1805", "sphere": "Colonial", "link": "https://en.wikipedia.org/wiki/First_Barbary_War" },
+      { "name": "Tecumseh's War", "start": "01/01/1811", "end": "12/31/1811", "sphere": "Native", "link": "https://en.wikipedia.org/wiki/Tecumseh%27s_War" },
+      { "name": "War of 1812", "start": "6/18/1812", "end": "2/18/1815", "sphere": "European", "link": "https://en.wikipedia.org/wiki/War_of_1812" },
+      { "name": "Red Stick War", "start": "01/01/1813", "end": "8/31/1814", "sphere": "Native", "link": "https://en.wikipedia.org/wiki/Creek_War" }
     ];
-    console.log(this.timeline)
-    console.log(data);
-    // Extract the unique dates from the data
-    const customTicks = [...new Set(this.timeline.flatMap(d => [d.start.getTime(), d.end ? d.end.getTime() : d.start.getTime()]))]
-      .sort((a, b) => a - b);
 
-    const margin = { top: 20, right: 20, bottom: 50, left: 50 },
-      width = 800 - margin.left - margin.right,
-      height = 400 - margin.top - margin.bottom;
+    var xTimestamps = getUniqueOrderedTimestamps(notesData)
+    // Extract start and end dates, combine them into a single list, and remove duplicates
+    var xpositions = new Set();
 
-    // Scales
-    const x = window.d3.scaleBand()
-      .domain(customTicks)
-      .range([0, width])
-      .padding(0.0);
-
-    const y = window.d3.scaleBand()
-      .domain(stacks)
-      .range([0, height])
-      .padding(0.2);
-
-    const barHeight = 7; // Set the height of bars and circles
-
-    // Axis
-    const xAxis = window.d3.axisBottom(x)
-      .tickFormat(d => {
-        const item = this.timeline.find(e => e.start.getTime() === d || (e.end && e.end.getTime() === d));
-        return item ? (item.start.getTime() === d ? item.labelStart : item.labelEnd) : '';
-      });
-
-    const yAxis = window.d3.axisLeft(y);
-
-    // SVG Container
-    const svg = window.d3.select("#mygraph").append("svg")
-      .attr("width", width + margin.left + margin.right)
-      .attr("height", height + margin.top + margin.bottom)
-      .append("g")
-      .attr("transform", `translate(${margin.left},${margin.top})`);
-
-    // Add a thin black line for each stack
-    svg.selectAll(".stack-line")
-      .data(stacks)
-      .enter().append("line")
-      .attr("class", "stack-line")
-      .attr("x1", 0)
-      .attr("x2", width)
-      .attr("y1", d => y(d) + y.bandwidth() / 2)
-      .attr("y2", d => y(d) + y.bandwidth() / 2);
-
-    // Bars for stacks with both start and end dates
-    svg.selectAll(".bar")
-      .data(this.timeline.filter(d => d.end))
-      .enter().append("rect")
-      .attr("class", d => `bar ${d.stack}`)
-      .attr("x", d => x(d.start.getTime()) + (x.bandwidth() - (x.bandwidth() * x.padding())) / 2) // Align bars with tick marks
-      .attr("y", d => y(d.stack) + (y.bandwidth() - barHeight) / 2)  // Center the bar vertically
-      .attr("width", d => {
-        const startX = x(d.start.getTime()) + (x.bandwidth() - (x.bandwidth() * x.padding())) / 2;
-        const endX = x(d.end.getTime()) + (x.bandwidth() - (x.bandwidth() * x.padding())) / 2;
-        return endX - startX; // Correct width calculation
-      })
-      .attr("height", barHeight)  // Set bar height to 7 pixels
-      .attr("fill", d => d.color);
-
-    // Add labels to bars
-    // svg.selectAll(".bar-label")
-    //   .data(this.timeline.filter(d => d.end))
-    //   .enter().append("text")
-    //   .attr("class", "label-text")
-    //   .attr("x", d => x(d.start.getTime()) + (x(d.end.getTime()) - x(d.start.getTime())) / 2)
-    //   .attr("y", d => y(d.stack) + y.bandwidth() / 2 + 3)  // Center the label vertically
-    //   .text(d => d.value);
-    const outerThis = this; // Capture the outer `this` context
-    svg.selectAll(".bar-label")
-      .data(this.timeline.filter(d => d.end))
-      .enter().append("text")
-      .attr("class", "label-text")
-      .attr("x", d => x(d.start.getTime()) + (x(d.end.getTime()) - x(d.start.getTime())) / 2)
-      .attr("y", d => y(d.stack) + y.bandwidth() / 2 + 3)  // Center the label vertically
-      .text(d => d.value)
-      .on("click", function (event, d) {
-        console.log(event)
-        console.log(outerThis)
-        outerThis.openjournal(d.journal_id); // Use `d` to get the journal_id
-      });
-    // Circles for single-point events
-    svg.selectAll(".circle-event")
-      .data(this.timeline.filter(d => !d.end))
-      .enter().append("circle")
-      .attr("class", "circle-event")
-      .attr("cx", d => x(d.start.getTime()) + x.bandwidth() / 2) // Center the circle horizontally at the tick
-      .attr("cy", d => y(d.stack) + y.bandwidth() / 2)  // Center the circle vertically
-      .attr("r", barHeight / 2)  // Set radius to 3.5 pixels (half of bar height)
-      .attr("fill", d => d.color)
-      .style("stroke", "black")  // Add a thin black line for each circle
-      .style("stroke-width", "1px");
-
-    // Add labels to circles
-    svg.selectAll(".circle-label")
-      .data(this.timeline.filter(d => !d.end))
-      .enter().append("text")
-      .attr("class", "label-text")
-      .attr("x", d => x(d.start.getTime()) + x.bandwidth() / 2 + 10) // Place label to the right of the circle
-      .attr("y", d => y(d.stack) + y.bandwidth() / 2 + 3)  // Center the label vertically
-      .text(d => d.value);
-
-    // Add the X Axis
-    svg.append("g")
-      .attr("class", "x axis")
-      .attr("transform", `translate(0,${height})`)
-      .call(xAxis)
-      .selectAll("text")
-      .style("text-anchor", "start") // Align text to the start
-      .attr("transform", "rotate(45)") // Rotate labels by 45 degrees
-      .attr("dx", "-0.4em") // Adjust x position
-      .attr("dy", "0.55em"); // Adjust y position
-
-    // Add the Y Axis
-    svg.append("g")
-      .attr("class", "y axis")
-      .call(yAxis);
-
-    // Function to download the SVG as an image
-    // function downloadImage() {
-    //   const svgElement = window.d3.select("svg").node();
-    //   const serializer = new XMLSerializer();
-    //   const source = serializer.serializeToString(svgElement);
-
-    //   const image = new Image();
-    //   image.src = 'data:image/svg+xml;base64,' + btoa(source);
-
-    //   const canvas = document.createElement("canvas");
-    //   canvas.width = svgElement.width.baseVal.value;
-    //   canvas.height = svgElement.height.baseVal.value;
-    //   const context = canvas.getContext("2d");
-
-    //   image.onload = function () {
-    //     context.drawImage(image, 0, 0);
-    //     const link = document.createElement("a");
-    //     link.download = "timeline.png";
-    //     link.href = canvas.toDataURL("image/png");
-    //     link.click();
-    //   };
-    // }
-
-    // Add a right-click event to save the SVG
-    window.d3.select("svg").on("contextmenu", function (event) {
-      event.preventDefault();
-      //      downloadImage();
+    // data.forEach(function (d) {
+    //   xpositions.add(d.start);
+    //   xpositions.add(d.end);
+    // });
+    notesData.forEach(function (d) {
+      xpositions.add(d.start);
+      xpositions.add(d.end);
     });
+    // Convert Set to Array, parse dates, and sort them
+    var xpositionArray = Array.from(xpositions).map(d => new Date(d)).sort((a, b) => a - b);
+
+    var dateMin = xpositionArray[0]
+    var dateMax = xpositionArray[xpositionArray.length-1]
+    console.log("Unique Dates:", xpositionArray);
+    console.log(dateMin)
+    console.log(dateMax)
+
+    var timeline = window.d3.layout.timeline()
+      .size([800, 700])
+      .extent([dateMin, dateMax])
+      .padding(5)
+      .maxBandHeight(25);
+
+    var svg = window.d3.select("#timeline");
+    console.log(svg);
+
+
+    // Select the tooltip element
+    var tooltip = window.d3.select("#tooltip-timeline");
+
+    // Measure the width of the category labels
+    var xOffset = 50; // Initial offset for the text
+    var maxLabelWidth = 0; // Track the maximum width of labels
+
+    svg.selectAll("text.type-label")
+      .data(types)
+      .enter()
+      .append("text")
+      .text(function (d) { return d; })
+      .attr("class", "type-label")
+      .attr("x", function () { return xOffset; })
+      .attr("y", function (d, i) { return 20 + (i * 80); })
+      .attr("font-size", "12px")
+      .attr("fill", "black")
+      .each(function () {
+        var bbox = this.getBBox();
+        maxLabelWidth = Math.max(maxLabelWidth, bbox.width);
+      });
+
+    console.log("Max Label Width:", maxLabelWidth);
+
+    var adjustedXOffset = xOffset + maxLabelWidth + 10; // Adjust the offset
+
+    var maxVerticalPosition = 0; // Track the maximum vertical position of the timeline
+    const outerThis = this; // Capture the outer `this` context
+
+    types.forEach(function (type, i) {
+//      var onlyThisType = data.filter(function (d) { return d.sphere === type; });
+      var onlyThisType = notesData.filter(function (d) { console.log(d);console.log(type);return d.sphere.includes(type); });
+      var theseBands = timeline(onlyThisType);
+
+      console.log("Type:", type);
+      console.log("Bands for", type, ":", theseBands);
+
+      // Add start and end positions to xpositions
+      theseBands.forEach(function (band) {
+        xpositions.add(band.start);
+        xpositions.add(band.end);
+      });
+
+      var laneGroup = svg.append("g")
+        .attr("transform", "translate(" + adjustedXOffset + "," + (35 + (i * 80)) + ")");
+
+      laneGroup.selectAll("rect")
+        .data(theseBands)
+        .enter()
+        .append("rect")
+        .attr("x", function (d) { return d.start; })
+        .attr("y", function (d) { return d.y; })
+        .attr("height", function (d) { return d.dy; })
+        .attr("width", function (d) { return d.end - d.start; })
+        .style("fill", function (d) { return colorScale(d.sphere); })
+        .style("stroke", "black")
+        .style("stroke-width", 1)
+        .on("mouseover", function (event, d) {
+          console.log(event)
+          console.log(d)
+          tooltip.style("display", "inline")
+            .html(d.name)
+            .style("left", (event.offsetX + 5) + "px")
+            .style("top", (event.offsetY + 5) + "px");
+        })
+        .on("mouseout", function () {
+          tooltip.style("display", "none");
+        })
+        .on("click", function (event, d) {
+          console.log(d)
+          console.log(outerThis)
+          outerThis.openLink(d.link);
+        });
+
+      maxVerticalPosition = Math.max(maxVerticalPosition, (35 + (i * 80)) + 80);
+    });
+
+
+
+    // Create a new scale for x-axis based on the xpositions
+    var xScale = window.d3.scaleTime()
+      .domain([new Date(dateMin), new Date(dateMax)])
+      .range([0, 800]);
+
+    var xAxis = window.d3.axisBottom(xScale)
+ //   .tickValues(xpositionArray) // Use xpositionArray for tick values
+    .tickValues(xTimestamps) // Use xpositionArray for tick values
+    .tickFormat(this.formatXaxis); // Use the custom format function
+
+    // Create the x-axis group and append it to the SVG
+    var xAxisGroup = svg.append("g")
+      .attr("transform", "translate(" + adjustedXOffset + "," + (maxVerticalPosition + 20) + ")") // Position the X-axis below the timeline
+      .call(xAxis);
+
+    // Rotate and position the x-axis labels
+    xAxisGroup.selectAll("text")
+      .attr("transform", "rotate(-40)")
+      .attr("text-anchor", "end")
+      .attr("dy", "0.35em");
+
+    console.log("Adjusted X Offset:", adjustedXOffset);
+    console.log("Max Vertical Position for X Axis:", maxVerticalPosition);
+    console.log("Unique X Positions:", xpositionArray);
+
 
   }
 

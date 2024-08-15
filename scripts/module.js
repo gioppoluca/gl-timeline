@@ -1,5 +1,6 @@
 import GraphDashboard from "./graph_dashboard.js"
 import JournalTimelineDialog from "./journal_timeline_dialog.js"
+import NoteTimelineDialog from "./note_timeline_dialog.js"
 
 Hooks.once('init', async function () {
 
@@ -11,6 +12,30 @@ Hooks.once('ready', async function () {
 
 });
 
+Hooks.on("getJournalSheetHeaderButtons", (sheet, buttons) => {
+	console.log('GIOPPO')
+	buttons.unshift({
+		label: "Timeline data",
+		class: "timeline",
+		icon: "fas fa-timeline",
+		onclick: () => {
+			console.log('invoking the dialog');
+			console.log(sheet)
+			var jtd = new NoteTimelineDialog({},sheet.object);
+			console.log('----------- clicked button - created - now render')
+			console.log(jtd)
+			jtd.render(true);
+
+			// Open Config window
+			//new SheetExportconfig(sheet.actor, sheetType, sheet).render(true);
+
+			// Bring window to top
+			Object.values(ui.windows)
+				.filter(window => window instanceof JournalTimelineDialog)[0]
+				?.bringToTop();
+		},
+	});
+});
 
 // Add button to Actor Sheet for opening app
 Hooks.on("getJournalPageSheetHeaderButtons", (sheet, buttons) => {
