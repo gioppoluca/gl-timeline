@@ -20,7 +20,13 @@
   ],
   "relationships": {
     "systems": [],
-    "requires": []
+    "requires": [
+      {
+        "id": "foundryvtt-simple-calendar",
+        "type": "module",
+        "compatibility": {}
+      }
+    ]
   },
   "esmodules": [
     "scripts/module.js"
@@ -28,7 +34,6 @@
   "scripts": [
     "scripts/lib/lib.js",
     "scripts/lib/d3.v7.min.js"
-    
   ],
   "styles": [
     "styles/module.css"
