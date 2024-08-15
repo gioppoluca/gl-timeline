@@ -38,19 +38,8 @@ export default class NoteTimelineDialog extends HandlebarsApplicationMixin(Appli
         }
     }
     get title() {
-        console.log('getTitle')
-        //return `My Module: ${game.i18n.localize(this.options.window.title)}`;
-        return '${game.i18n.localize(this.options.window.title)}';
+        return game.i18n.localize(this.options.window.title);
     }
-    // _onClickAction(event, target) {
-    //     const action = target.dataset["action"]
-    // }
-
-    // _onRender(context, options) {
-    //     // this.element.querySelector('#something')?.addEventListener('mouseover', (ev) => {
-
-    //     // })
-    // }
 
     async _prepareContext(options) {
         console.log('preparecontext')
@@ -65,16 +54,4 @@ export default class NoteTimelineDialog extends HandlebarsApplicationMixin(Appli
         console.log(context)
         return context;
     }
-    // async _preparePartContext(partId, context, options) {
-    //     return {
-    //         ...context,
-    //         key: 'value'
-    //     }
-    // }
-
-    // async onSubmit(event, form, formData) {
-    //     // if (form.reportValidity()) {
-    //     //     const submitted = formData.object   
-    //     // }
-    // }
 }

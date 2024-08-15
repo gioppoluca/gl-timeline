@@ -2,5 +2,7 @@
     "GLTIMELINE.hello": "hello",
     "GLTIMELINE.main.title": "Timeline graph",
     "GLTIMELINE.dialog.start_date": "Start date:",
-    "GLTIMELINE.dialog.end_date": "End date:"
+    "GLTIMELINE.dialog.end_date": "End date:",
+    "GLTIMELINE.dialog.save": "Save",
+    "GLTIMELINE.dialog.timelineInclude": "Is included in timeline?"
 }
